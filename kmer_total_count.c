@@ -62,21 +62,22 @@ int main(int argc, char **argv) {
     }
   }
   if(filename == NULL) {
-    fprintf(stderr, "Error: filename (-i) must be supplied\n");
-    exit(EXIT_FAILURE);
+    fprintf(stderr, "not input file specified with -i, reading from stdin\n");
+		fh = stdin;
   }
+	else {
+		fh = fopen(filename, "r");
+		if(fh == NULL) {
+			fprintf(stderr, "Could not open %s - %s\n", filename, strerror(errno));
+			exit(EXIT_FAILURE);
+		}
+	}
   if(kmer == 0 && !kmer_set) {
     fprintf(stderr, "Error: kmer (-k) must be supplied\n");
     exit(EXIT_FAILURE);
   }
   if(kmer == 0) {
     fprintf(stderr, "Error: invalid kmer - '%d'.\n", kmer);
-    exit(EXIT_FAILURE);
-  }
-
-  fh = fopen(filename, "r");
-  if(fh == NULL) {
-    fprintf(stderr, "Could not open %s\n", filename);
     exit(EXIT_FAILURE);
   }
 
