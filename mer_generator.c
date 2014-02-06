@@ -19,10 +19,9 @@ main() {
 		printf(" 0; }\n");
 	}
 
-	printf("int (*return_fn())(const char * )mer_ptr(int kmer) { switch(kmer) {");
+	printf("typedef unsigned long long (*merptr_t)(const char *);\n");
+	printf("merptr_t get_ptr(int kmer) { switch(kmer) {"); 
 	for(j = 1; j < 32; j++)
-		printf("case %d: return mer_%d;", j, j);
-	printf("}");
-
-
+		printf("case %d: return mer_%d;\n", j, j);
+	printf("}\n");
 }

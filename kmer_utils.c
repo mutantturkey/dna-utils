@@ -203,10 +203,9 @@ unsigned long long * get_kmer_counts_from_file(FILE *fh, const unsigned int kmer
 		for(i = 0; i < (signed long long)(seq_length - kmer + 1); i++) {
 			char *seq_h = &seq[i];
 			unsigned int j = 0;
-			for(j = 0; j < kmer; j++) { 
+			for(j = 0; j < kmer; j++)
 				if(seq_h[j] == 5) 
 					continue;
-			}
 
 			counts[(*mer_ptr)(seq_h)]++;
 			}	
