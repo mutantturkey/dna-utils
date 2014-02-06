@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <libjit.h>
 
 
 const unsigned char alpha[256] = 
@@ -23,6 +24,9 @@ unsigned long long pow_four(unsigned long long x) {
 	return (unsigned long long)1 << (x * 2);
 }
 
+unsigned long long mer_6(const char *seq_h) {
+ return seq_h[5] + seq_h[4] * 4 + seq_h[3] * 16 + seq_h[2] * 64 + seq_h[1] * 256 + seq_h[0] * 1024;
+}
 // convert a string of k-mer size base-4 values  into a
 // base-10 index
 unsigned long num_to_index(const char *str, const int kmer, const long error_pos, long long *current_position) {
@@ -162,9 +166,6 @@ unsigned long long * get_kmer_counts_from_file(FILE *fh, const unsigned int kmer
 	size_t len = 0;
 	ssize_t read;
 
-	long long i = 0;
-	long long position = 0;
-
 	// width is 4^kmer  
 	// there's a sneaky bitshift to avoid pow dependency
 	const unsigned long width = pow_four(kmer); 
@@ -178,6 +179,7 @@ unsigned long long * get_kmer_counts_from_file(FILE *fh, const unsigned int kmer
 
 	while ((read = getdelim(&line, &len, '>', fh)) != -1) {
 		size_t k;
+		long long i;
 		char *seq;
 		size_t seq_length;
 
@@ -199,29 +201,16 @@ unsigned long long * get_kmer_counts_from_file(FILE *fh, const unsigned int kmer
 			seq[k] = alpha[(int)seq[k]];
 		
 
-		// loop through our seq to process each k-mer
-		for(position = 0; position < (signed)(seq_length - kmer + 1); position++) {
-			unsigned long long mer = 0;
-			unsigned long long multiply = 1;
-
-			// for each char in the k-mer check if it is an error char
-			for(i = position + kmer - 1; i >= position; i--){
-				if(seq[i] == 5) { 
-					mer = width;
-					position = i;
-					goto next;
-				}
-
-				// multiply this char in the mer by the multiply
-				// and bitshift the multiply for the next round
-				mer += seq[i] * multiply;
-				multiply = multiply << 2;
+		for(i = 0; i < (signed long long)(seq_length - kmer + 1); i++) {
+			char *seq_h = &seq[i];
+			unsigned int j = 0;
+			for(j = 0; j < kmer; j++) { 
+				if(seq_h[j] == 5) 
+					continue;
 			}
-			// use this point to get mer of our loop
-			next:
-			// bump up the mer value in the counts array
-			counts[mer]++;
-		}
+
+			counts[mer_6(seq_h)]++;
+			}	
 	} 
 
   free(line);
