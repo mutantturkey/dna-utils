@@ -140,11 +140,9 @@ int main(int argc, char **argv) {
 	else {
 		if(label) {
 			for(i = 0; i < width; i++) {
-				if(counts[i] != 0) {
-					char *kmer_str = index_to_kmer(i, kmer);
-					fprintf(stdout, "%s\t%llu\n", kmer_str, counts[i]);
-					free(kmer_str);
-				}
+				char *kmer_str = index_to_kmer(i, kmer);
+				fprintf(stdout, "%s\t%llu\n", kmer_str, counts[i]);
+				free(kmer_str);
 			} 
 		}
 		else {
