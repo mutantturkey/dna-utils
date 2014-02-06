@@ -191,24 +191,28 @@ unsigned long long * get_kmer_counts_from_file(FILE *fh, const unsigned int kmer
 		seq = seq + 1;
 
 		// strip out all other newlines to handle multiline sequences
-		strnstrip(seq, '\n', strlen(seq));
-		seq_length = strlen(seq);
 
 		// relace A, C, G and T with 0, 1, 2, 3 respectively
 		// everything else is 5 
-		for(k = 0; k < seq_length; k++)
-			seq[k] = alpha[(int)seq[k]];
-		
+		seq_length = strlen(seq);
+
+		size_t j  = 0;
+		for(k = 0; k < seq_length; k++) {
+			char c = alpha[(int)seq[k]];
+			if(c != 5) {
+					seq[j] = c;
+				j++;
+			}
+		}
+		seq[j] = '\0';
+
+		seq_length = j; 
 
 		for(i = 0; i < (signed long long)(seq_length - kmer + 1); i++) {
 			char *seq_h = &seq[i];
-			unsigned int j = 0;
-			for(j = 0; j < kmer; j++)
-				if(seq_h[j] == 5) 
-					continue;
-
-			counts[(*mer_ptr)(seq_h)]++;
-			}	
+			unsigned long long mer = (*mer_ptr)(seq_h);
+			counts[mer]++;
+		}
 	} 
 
   free(line);
