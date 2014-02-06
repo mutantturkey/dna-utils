@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <omp.h>
 
 
 const unsigned char alpha[256] = 
@@ -158,13 +159,6 @@ size_t strnstrip(char *s, int c, size_t len) {
 
 unsigned long long * get_kmer_counts_from_file(FILE *fh, const unsigned int kmer) {
 	
-	char *line = NULL;
-	size_t len = 0;
-	ssize_t read;
-
-	long long i = 0;
-	long long position = 0;
-
 	// width is 4^kmer  
 	// there's a sneaky bitshift to avoid pow dependency
 	const unsigned long width = pow_four(kmer); 
@@ -176,7 +170,25 @@ unsigned long long * get_kmer_counts_from_file(FILE *fh, const unsigned int kmer
 		exit(EXIT_FAILURE);
 	}
 
-	while ((read = getdelim(&line, &len, '>', fh)) != -1) {
+	int test = 1;
+	#pragma omp parallel
+	while (test) {
+		char *line = NULL;
+		size_t len = 0;
+		ssize_t read;
+
+	  
+		#pragma omp critical 
+		{
+		read = getdelim(&line, &len, '>', fh);
+		}
+		if(read == -1) {
+			test = 0;
+			continue;
+		}
+
+		long long i = 0;
+		long long position = 0;
 		size_t k;
 		char *seq;
 		size_t seq_length;
@@ -220,11 +232,14 @@ unsigned long long * get_kmer_counts_from_file(FILE *fh, const unsigned int kmer
 			// use this point to get mer of our loop
 			next:
 			// bump up the mer value in the counts array
+			#pragma omp atomic 
 			counts[mer]++;
 		}
+	#pragma omp critical
+  free(line);
+
 	} 
 
-  free(line);
 	fclose(fh);
 
 	return counts;

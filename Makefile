@@ -1,6 +1,6 @@
 VERSION=\"0.0.2\"
 CC = gcc
-CFLAGS = -O3 -s -mtune=native -Wall -DVERSION=$(VERSION) -Wextra
+CFLAGS = -O3 -s -mtune=native -Wall -DVERSION=$(VERSION) -Wextra -fopenmp
 DESTDIR = /usr/local/
 
 
@@ -18,7 +18,7 @@ kmer_counts_per_sequence: libkmer.o kmer_counts_per_sequence.c kmer_utils.h
 clean:
 	rm -vf kmer_total_count kmer_counts_per_sequence libkmer.so libkmer.o
 
-debug: CFLAGS = -ggdb -Wall -Wextra -DVERSION=$(VERSION)\"-debug\"
+debug: CFLAGS = -ggdb -Wall -Wextra -DVERSION=$(VERSION)\"-debug\" -fopenmp
 debug: all
 
 install: all
