@@ -3,8 +3,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <libjit.h>
 
+#include "mer.c"
 
 const unsigned char alpha[256] = 
 {5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
@@ -24,9 +24,6 @@ unsigned long long pow_four(unsigned long long x) {
 	return (unsigned long long)1 << (x * 2);
 }
 
-unsigned long long mer_6(const char *seq_h) {
- return seq_h[5] + seq_h[4] * 4 + seq_h[3] * 16 + seq_h[2] * 64 + seq_h[1] * 256 + seq_h[0] * 1024;
-}
 // convert a string of k-mer size base-4 values  into a
 // base-10 index
 unsigned long num_to_index(const char *str, const int kmer, const long error_pos, long long *current_position) {
@@ -177,6 +174,8 @@ unsigned long long * get_kmer_counts_from_file(FILE *fh, const unsigned int kmer
 		exit(EXIT_FAILURE);
 	}
 
+	merptr_t mer_ptr = get_ptr(kmer);
+
 	while ((read = getdelim(&line, &len, '>', fh)) != -1) {
 		size_t k;
 		long long i;
@@ -209,7 +208,7 @@ unsigned long long * get_kmer_counts_from_file(FILE *fh, const unsigned int kmer
 					continue;
 			}
 
-			counts[mer_6(seq_h)]++;
+			counts[(*mer_ptr)(seq_h)]++;
 			}	
 	} 
 
