@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "sparse.h"
 
 const unsigned char alpha[256] = 
 {5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
@@ -156,8 +157,8 @@ size_t strnstrip(char *s, int c, size_t len) {
 
 }
 
-unsigned long long * get_kmer_counts_from_file(FILE *fh, const unsigned int kmer) {
-	
+node * get_kmer_counts_from_file(FILE *fh, const unsigned int kmer) {
+
 	char *line = NULL;
 	size_t len = 0;
 	ssize_t read;
@@ -166,15 +167,11 @@ unsigned long long * get_kmer_counts_from_file(FILE *fh, const unsigned int kmer
 	long long position = 0;
 
 	// width is 4^kmer  
-	// there's a sneaky bitshift to avoid pow dependency
-	const unsigned long width = pow_four(kmer); 
+	const unsigned long long width = pow_four(kmer); 
 
-	// malloc our return array
-	unsigned long long * counts = calloc((width+ 1), sizeof(unsigned long long));
-	if(counts == NULL)  {
-		fprintf(stderr, strerror(errno));
-		exit(EXIT_FAILURE);
-	}
+	node *root = NULL;
+
+
 
 	while ((read = getdelim(&line, &len, '>', fh)) != -1) {
 		size_t k;
@@ -219,15 +216,24 @@ unsigned long long * get_kmer_counts_from_file(FILE *fh, const unsigned int kmer
 			}
 			// use this point to get mer of our loop
 			next:
-			// bump up the mer value in the counts array
-			counts[mer]++;
+			{
+				// bump up the mer value in the counts array
+				node *tmp = search(&root, mer);
+				if(tmp) {
+					tmp->value++; 
+				}
+				else {
+					insert(&root, mer);
+				}
+			}
 		}
 	} 
 
   free(line);
 	fclose(fh);
 
-	return counts;
+	return root;
+
 }
 
 unsigned long long * get_kmer_counts_from_filename(const char *fn, const unsigned int kmer) {

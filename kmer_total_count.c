@@ -6,6 +6,7 @@
 #include <string.h>
 #include <getopt.h>
 
+#include "sparse.h"
 #include "kmer_utils.h"
 
 
@@ -115,43 +116,15 @@ int main(int argc, char **argv) {
 
 	width = pow_four(kmer);
 
-	unsigned long long *counts = get_kmer_counts_from_file(fh, kmer);
-
-	// If nonzero is set, only print non zeros
-	if(nonzero) {
-		// if labels is set, print out our labels
-		if(label) {
-			for(i = 0; i < width; i++)
-				if(counts[i] != 0) {
-					char *kmer_str = index_to_kmer(i, kmer);
-					fprintf(stdout, "%s\t%llu\n", kmer_str, counts[i]);
-					free(kmer_str);
-				}
-
-		}
-		else {
-			for(i = 0; i < width; i++)
-				if(counts[i] != 0) 
-					fprintf(stdout, "%llu\t%llu\n", i, counts[i]);
-
-		}
+	if(kmer > 12) {
+		node *root = get_kmer_counts_from_file(fh, kmer);
+		print_sparse(root, label, nonzero, kmer);
 	}
-	// If we aren't printing nonzeros print everything
-	else {
-		if(label) {
-			for(i = 0; i < width; i++) {
-				char *kmer_str = index_to_kmer(i, kmer);
-				fprintf(stdout, "%s\t%llu\n", kmer_str, counts[i]);
-				free(kmer_str);
-			} 
-		}
-		else {
-			for(i = 0; i < width; i=i+4) {
-				fprintf(stdout, "%llu\n%llu\n%llu\n%llu\n", counts[i], counts[i+1], counts[i+2], counts[i+3]);
-			}
-		}
-	}
+	//else {
+//		unsigned long long *counts = get_kmer_counts_from_file(fh, kmer);
+//		print(countst, label, nonzero);
+		//free(counts);
+//	}
 
-	free(counts);
 	return EXIT_SUCCESS;
 }
