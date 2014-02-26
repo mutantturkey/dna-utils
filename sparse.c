@@ -60,29 +60,3 @@ unsigned long long *lookup(node **tree, size_t index) {
 	else
 		return 0;
 }
-
-void print_sparse(node *tree, bool label, bool nonzero, unsigned int kmer) {
-
-	if (tree) {
-		print_sparse(tree->left, label, nonzero, kmer);
-		if(label && nonzero) {
-				char *kmer_str = index_to_kmer(tree->index, kmer);
-				if (tree->value != 0)
-					fprintf(stdout, "%s\t%llu\n", kmer_str, tree->value);
-				free(kmer_str);
-		}
-		else if(label) {
-				char *kmer_str = index_to_kmer(tree->index, kmer);
-				fprintf(stdout, "%s\t%llu\n", kmer_str, tree->value);
-				free(kmer_str);
-		}
-		else if(nonzero) {
-			if (tree->value != 0)
-				fprintf(stdout, "%zu\t%llu\n", tree->index, tree->value);
-		}
-		else
-			fprintf(stdout, "%llu\n", tree->value);
-
-		print_sparse(tree->right, label, nonzero, kmer);
-	}
-}

@@ -11,6 +11,10 @@ unsigned long long pow_four(unsigned long long x);
 const unsigned char alpha[256]; 
 
 // file loading functions
-unsigned long long load_specific_mers_from_file(const char *fn, unsigned int kmer, size_t width, size_t *arr);
-node * get_kmer_counts_from_filename(const char *fn, const unsigned int kmer);
-node * get_kmer_counts_from_file(FILE *fh, const int kmer);
+node * get_sparse_kmer_counts_from_filename(const char *fn, const unsigned int kmer);
+node * get_sparse_kmer_counts_from_file(FILE *fh, const int kmer);
+
+unsigned long long * get_dense_kmer_counts_from_file(FILE *fh, const unsigned int kmer);
+
+
+void print_dense(unsigned long long *counts, bool label, bool nonzero, unsigned int kmer);

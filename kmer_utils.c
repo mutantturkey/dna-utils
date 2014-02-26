@@ -157,7 +157,7 @@ size_t strnstrip(char *s, int c, size_t len) {
 
 }
 
-node * get_kmer_counts_from_file(FILE *fh, const unsigned int kmer) {
+node * get_sparse_kmer_counts_from_file(FILE *fh, const unsigned int kmer) {
 
 	char *line = NULL;
 	size_t len = 0;
@@ -236,6 +236,75 @@ node * get_kmer_counts_from_file(FILE *fh, const unsigned int kmer) {
 
 }
 
+unsigned long long * get_dense_kmer_counts_from_file(FILE *fh, const unsigned int kmer) {
+
+	char *line = NULL;
+	size_t len = 0;
+	ssize_t read;
+
+	long long i = 0;
+	long long position = 0;
+
+	// width is 4^kmer  
+	const unsigned long long width = pow_four(kmer); 
+	
+	unsigned long long *counts = malloc(width+1 * sizeof(unsigned long long));
+	while ((read = getdelim(&line, &len, '>', fh)) != -1) {
+		size_t k;
+		char *seq;
+		size_t seq_length;
+
+		// find our first \n, this should be the end of the header
+		seq = strchr(line, '\n');	
+		if(seq == NULL) 
+			continue;
+
+		// point to one past that.
+		seq = seq + 1;
+
+		// strip out all other newlines to handle multiline sequences
+		strnstrip(seq, '\n', strlen(seq));
+		seq_length = strlen(seq);
+
+		// relace A, C, G and T with 0, 1, 2, 3 respectively
+		// everything else is 5 
+		for(k = 0; k < seq_length; k++)
+			seq[k] = alpha[(int)seq[k]];
+		
+
+		// loop through our seq to process each k-mer
+		for(position = 0; position < (signed)(seq_length - kmer + 1); position++) {
+			unsigned long long mer = 0;
+			unsigned long long multiply = 1;
+
+			// for each char in the k-mer check if it is an error char
+			for(i = position + kmer - 1; i >= position; i--){
+				if(seq[i] == 5) { 
+					mer = width;
+					position = i;
+					goto next;
+				}
+
+				// multiply this char in the mer by the multiply
+				// and bitshift the multiply for the next round
+				mer += seq[i] * multiply;
+				multiply = multiply << 2;
+			}
+			// use this point to get mer of our loop
+			next:
+			{
+				// bump up the mer value in the counts array
+				counts[mer]++;
+			}
+		}
+	}
+
+  //free(line);
+	fclose(fh);
+	return counts;
+
+}
+
 unsigned long long * get_kmer_counts_from_filename(const char *fn, const unsigned int kmer) {
 		FILE *fh = fopen(fn, "r");
 		if(fh == NULL) {
@@ -243,6 +312,72 @@ unsigned long long * get_kmer_counts_from_filename(const char *fn, const unsigne
 			return 0;
 		}
 
-		return get_kmer_counts_from_file(fh, kmer);
+		return get_dense_kmer_counts_from_file(fh, kmer);
 }
 
+void print_dense(unsigned long long *counts, bool label, bool nonzero, unsigned int kmer) {
+	size_t width = pow_four(kmer);
+	size_t i = 0;
+
+	// If nonzero is set, only print non zeros
+	if(nonzero) {
+		// if labels is set, print out our labels
+		if(label) {
+			for(i = 0; i < width; i++)
+				if(counts[i] != 0) {
+					char *kmer_str = index_to_kmer(i, kmer);
+					fprintf(stdout, "%s\t%llu\n", kmer_str, counts[i]);
+					free(kmer_str);
+				}
+
+		}
+		else {
+			for(i = 0; i < width; i++)
+				if(counts[i] != 0) 
+					fprintf(stdout, "%llu\t%llu\n", i, counts[i]);
+
+		}
+	}
+	// If we aren't printing nonzeros print everything
+	else {
+		if(label) {
+			for(i = 0; i < width; i++) {
+				char *kmer_str = index_to_kmer(i, kmer);
+				fprintf(stdout, "%s\t%llu\n", kmer_str, counts[i]);
+				free(kmer_str);
+			} 
+		}
+		else {
+			for(i = 0; i < width; i=i+4) {
+				fprintf(stdout, "%llu\n%llu\n%llu\n%llu\n", counts[i], counts[i+1], counts[i+2], counts[i+3]);
+			}
+		}
+
+	}
+}
+
+void print_sparse(node *tree, bool label, bool nonzero, unsigned int kmer) {
+
+	if (tree) {
+		print_sparse(tree->left, label, nonzero, kmer);
+		if(label && nonzero) {
+				char *kmer_str = index_to_kmer(tree->index, kmer);
+				if (tree->value != 0)
+					fprintf(stdout, "%s\t%llu\n", kmer_str, tree->value);
+				free(kmer_str);
+		}
+		else if(label) {
+				char *kmer_str = index_to_kmer(tree->index, kmer);
+				fprintf(stdout, "%s\t%llu\n", kmer_str, tree->value);
+				free(kmer_str);
+		}
+		else if(nonzero) {
+			if (tree->value != 0)
+				fprintf(stdout, "%zu\t%llu\n", tree->index, tree->value);
+		}
+		else
+			fprintf(stdout, "%llu\n", tree->value);
+
+		print_sparse(tree->right, label, nonzero, kmer);
+	}
+}

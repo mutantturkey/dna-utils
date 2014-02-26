@@ -1,6 +1,6 @@
 VERSION=\"0.0.2\"
 CC = gcc
-CFLAGS = -O3 -s -mtune=native -Wall -DVERSION=$(VERSION) -Wextra -lcsparse
+CFLAGS = -O3 -s -mtune=native -Wall -DVERSION=$(VERSION) -Wextra
 DESTDIR = /usr/local/
 
 

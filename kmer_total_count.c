@@ -18,6 +18,7 @@ void help() {
 				 "  --kmer     -k  size of mers to count\n"
 				 "  --nonzero  -n  only print non-zero values\n"
 				 "  --label    -l  print mer along with value\n"
+				 "  --sparse   -s  force sparse table for any mer\n"
 				 "\n"
 				 "Report all bugs to mutantturkey@gmail.com\n"
 				 "\n"
@@ -40,16 +41,14 @@ int main(int argc, char **argv) {
 	bool nonzero = false;
 	bool label = false;
 	bool kmer_set = false;
-
-	unsigned long long width = 0;
-
-	unsigned long long i = 0;
+	bool force_sparse = false;
 
 	static struct option long_options[] = {
 		{"input", required_argument, 0, 'i'},
 		{"kmer",  required_argument, 0, 'k'},
 		{"nonzero", no_argument, 0, 'n'},
 		{"label", no_argument, 0, 'l'},
+		{"sparse", no_argument, 0, 's'},
 		{"help", no_argument, 0, 'h'},
 		{0, 0, 0, 0}
 	};
@@ -59,7 +58,7 @@ int main(int argc, char **argv) {
 		int option_index = 0;
 		int c = 0;
 
-		c = getopt_long (argc, argv, "i:k:nlvh", long_options, &option_index);
+		c = getopt_long (argc, argv, "i:k:nslvh", long_options, &option_index);
 
 		if (c == -1)
 			break;
@@ -77,6 +76,9 @@ int main(int argc, char **argv) {
 				break;
 			case 'l':
 				label = true;
+				break;
+			case 's':
+				force_sparse = true;
 				break;
 			case 'h':
 				help();
@@ -114,17 +116,14 @@ int main(int argc, char **argv) {
 		exit(EXIT_FAILURE);
 	}
 
-	width = pow_four(kmer);
-
-	if(kmer > 12) {
-		node *root = get_kmer_counts_from_file(fh, kmer);
+	if(kmer > 12 || force_sparse) {
+		node *root = get_sparse_kmer_counts_from_file(fh, kmer);
 		print_sparse(root, label, nonzero, kmer);
 	}
-	//else {
-//		unsigned long long *counts = get_kmer_counts_from_file(fh, kmer);
-//		print(countst, label, nonzero);
-		//free(counts);
-//	}
+	else {
+		unsigned long long *counts = get_dense_kmer_counts_from_file(fh, kmer);
+		print_dense(counts, label, nonzero, kmer);
+	}
 
 	return EXIT_SUCCESS;
 }
