@@ -50,7 +50,7 @@ unsigned long num_to_index(const char *str, const int kmer, const long error_pos
 }
 
 // return the number of loaded elements
-unsigned long long load_specific_mers_from_file(char *fn, unsigned int kmer, size_t width, size_t *arr) { 
+size_t load_specific_mers_from_file(char *fn, unsigned int kmer, size_t width, size_t *arr) { 
 		FILE *fh;
 		size_t arr_pos = 0;
 		char line[64];
