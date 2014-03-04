@@ -363,19 +363,16 @@ void print_kmer(kmer_map *counts, bool label, bool nonzero, unsigned int kmer) {
 	if(nonzero) {
 		// if labels is set, print out our labels
 		if(label) {
-			for(i = 0; i < width; i++)
-				if(counts->count(i) != 0) {
-					char *kmer_str = index_to_kmer(i, kmer);
-					fprintf(stdout, "%s\t%llu\n", kmer_str, counts->at(i));
-					free(kmer_str);
-				}
-
+			for(auto it = counts->begin(); it != counts->end(); it++ ) {
+				char *kmer_str = index_to_kmer(it->first, kmer);
+				fprintf(stdout, "%s\t%llu\n", kmer_str, it->second);
+				free(kmer_str);
+			}
 		}
 		else {
-			for(i = 0; i < width; i++)
-				if(counts->count(i) != 0) 
-					fprintf(stdout, "%zu\t%llu\n", i, counts->at(i));
-
+			for(auto it = counts->begin(); it != counts->end(); it++ ) {
+				fprintf(stdout, "%zu\t%llu\n", it->first, it->second);
+			}
 		}
 	}
 	// If we aren't printing nonzeros print everything
