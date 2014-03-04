@@ -11,7 +11,20 @@ size_t strnstrip(char *s, int c, size_t len);
 unsigned long long pow_four(unsigned long long x);
 
 // Variables
-typedef unordered_map<size_t,unsigned long long> kmer_map;
+typedef struct {
+	size_t operator() (const size_t &k) const {
+	return k;
+	}
+} kmer_noHash_hash;
+
+typedef struct {
+	bool operator() (const size_t &x, const size_t &y) const {
+		return x == y;
+	}
+} kmer_eq; 
+
+typedef unordered_map<size_t,unsigned long long, kmer_noHash_hash, kmer_eq> kmer_map;
+
 unsigned char alpha[256]; 
 // file loading functions
 kmer_map *get_sparse_kmer_counts_from_filename(const char *fn, const unsigned int kmer);

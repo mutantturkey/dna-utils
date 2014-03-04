@@ -8,7 +8,19 @@
 
 using namespace std;
 
-typedef unordered_map<size_t,unsigned long long> kmer_map;
+typedef struct {
+	size_t operator() (const size_t &k) const {
+	return k;
+	}
+} kmer_noHash_hash;
+
+typedef struct {
+	bool operator() (const size_t &x, const size_t &y) const {
+		return x == y;
+	}
+} kmer_eq; 
+
+typedef unordered_map<size_t, unsigned long long, kmer_noHash_hash, kmer_eq> kmer_map;
 
 const unsigned char alpha[256] = 
 {5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
