@@ -6,7 +6,6 @@
 #include <string.h>
 #include <getopt.h>
 
-#include "sparse.h"
 #include "kmer_utils.h"
 
 
@@ -117,12 +116,12 @@ int main(int argc, char **argv) {
 	}
 
 	if(kmer > 12 || force_sparse) {
-		node *root = get_sparse_kmer_counts_from_file(fh, kmer);
-		print_sparse(root, label, nonzero, kmer);
+		kmer_map *counts = get_sparse_kmer_counts_from_file(fh, kmer);
+		print_kmer(counts, label, nonzero, kmer);
 	}
 	else {
 		unsigned long long *counts = get_dense_kmer_counts_from_file(fh, kmer);
-		print_dense(counts, label, nonzero, kmer);
+		print_kmer(counts, label, nonzero, kmer);
 	}
 
 	return EXIT_SUCCESS;

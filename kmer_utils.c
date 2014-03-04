@@ -4,7 +4,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "sparse.h"
+#include <unordered_map>
+
+using namespace std;
+
+typedef unordered_map<size_t,unsigned long long> kmer_map;
 
 const unsigned char alpha[256] = 
 {5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
@@ -98,9 +102,9 @@ char *index_to_kmer(unsigned long long index, long kmer)  {
 
 	size_t i = 0;
 	size_t j = 0;
-	char *num_array = calloc(kmer,  sizeof(char));
-	char *ret = calloc(kmer + 1, sizeof(char));
-	if(ret == NULL)
+	char *num_array = (char *) calloc(kmer,  sizeof(char));
+	char *ret = (char *)  calloc(kmer + 1, sizeof(char));
+	if(ret == NULL || num_array == NULL) 
 		exit(EXIT_FAILURE);
 		
 
@@ -157,7 +161,7 @@ size_t strnstrip(char *s, int c, size_t len) {
 
 }
 
-node * get_sparse_kmer_counts_from_file(FILE *fh, const unsigned int kmer) {
+kmer_map *get_sparse_kmer_counts_from_file(FILE *fh, int kmer) {
 
 	char *line = NULL;
 	size_t len = 0;
@@ -166,12 +170,10 @@ node * get_sparse_kmer_counts_from_file(FILE *fh, const unsigned int kmer) {
 	long long i = 0;
 	long long position = 0;
 
+ 	kmer_map *counts = new kmer_map();
+	//
 	// width is 4^kmer  
 	const unsigned long long width = pow_four(kmer); 
-
-	node *root = NULL;
-
-
 
 	while ((read = getdelim(&line, &len, '>', fh)) != -1) {
 		size_t k;
@@ -218,13 +220,7 @@ node * get_sparse_kmer_counts_from_file(FILE *fh, const unsigned int kmer) {
 			next:
 			{
 				// bump up the mer value in the counts array
-				node *tmp = search(&root, mer);
-				if(tmp) {
-					tmp->value++; 
-				}
-				else {
-					insert(&root, mer);
-				}
+				(*counts)[mer]++;
 			}
 		}
 	} 
@@ -232,7 +228,7 @@ node * get_sparse_kmer_counts_from_file(FILE *fh, const unsigned int kmer) {
   free(line);
 	fclose(fh);
 
-	return root;
+	return counts;
 
 }
 
@@ -248,7 +244,10 @@ unsigned long long * get_dense_kmer_counts_from_file(FILE *fh, const unsigned in
 	// width is 4^kmer  
 	const unsigned long long width = pow_four(kmer); 
 	
-	unsigned long long *counts = malloc(width+1 * sizeof(unsigned long long));
+	unsigned long long *counts = (unsigned long long *) calloc(width+1, sizeof(unsigned long long));
+	if(counts == NULL) {
+		exit(EXIT_FAILURE);
+	}
 	while ((read = getdelim(&line, &len, '>', fh)) != -1) {
 		size_t k;
 		char *seq;
@@ -305,7 +304,7 @@ unsigned long long * get_dense_kmer_counts_from_file(FILE *fh, const unsigned in
 
 }
 
-unsigned long long * get_kmer_counts_from_filename(const char *fn, const unsigned int kmer) {
+unsigned long long * get_dense_kmer_counts_from_filename(const char *fn, const unsigned int kmer) {
 		FILE *fh = fopen(fn, "r");
 		if(fh == NULL) {
 			fprintf(stderr, "Could not open %s - %s\n", fn, strerror(errno));
@@ -315,7 +314,7 @@ unsigned long long * get_kmer_counts_from_filename(const char *fn, const unsigne
 		return get_dense_kmer_counts_from_file(fh, kmer);
 }
 
-void print_dense(unsigned long long *counts, bool label, bool nonzero, unsigned int kmer) {
+void print_kmer(unsigned long long *counts, bool label, bool nonzero, unsigned int kmer) {
 	size_t width = pow_four(kmer);
 	size_t i = 0;
 
@@ -334,7 +333,7 @@ void print_dense(unsigned long long *counts, bool label, bool nonzero, unsigned 
 		else {
 			for(i = 0; i < width; i++)
 				if(counts[i] != 0) 
-					fprintf(stdout, "%llu\t%llu\n", i, counts[i]);
+					fprintf(stdout, "%zu\t%llu\n", i, counts[i]);
 
 		}
 	}
@@ -356,28 +355,48 @@ void print_dense(unsigned long long *counts, bool label, bool nonzero, unsigned 
 	}
 }
 
-void print_sparse(node *tree, bool label, bool nonzero, unsigned int kmer) {
+void print_kmer(kmer_map *counts, bool label, bool nonzero, unsigned int kmer) {
+	size_t width = pow_four(kmer);
+	size_t i = 0;
 
-	if (tree) {
-		print_sparse(tree->left, label, nonzero, kmer);
-		if(label && nonzero) {
-				char *kmer_str = index_to_kmer(tree->index, kmer);
-				if (tree->value != 0)
-					fprintf(stdout, "%s\t%llu\n", kmer_str, tree->value);
-				free(kmer_str);
-		}
-		else if(label) {
-				char *kmer_str = index_to_kmer(tree->index, kmer);
-				fprintf(stdout, "%s\t%llu\n", kmer_str, tree->value);
-				free(kmer_str);
-		}
-		else if(nonzero) {
-			if (tree->value != 0)
-				fprintf(stdout, "%zu\t%llu\n", tree->index, tree->value);
-		}
-		else
-			fprintf(stdout, "%llu\n", tree->value);
+	// If nonzero is set, only print non zeros
+	if(nonzero) {
+		// if labels is set, print out our labels
+		if(label) {
+			for(i = 0; i < width; i++)
+				if(counts->count(i) != 0) {
+					char *kmer_str = index_to_kmer(i, kmer);
+					fprintf(stdout, "%s\t%llu\n", kmer_str, counts->at(i));
+					free(kmer_str);
+				}
 
-		print_sparse(tree->right, label, nonzero, kmer);
+		}
+		else {
+			for(i = 0; i < width; i++)
+				if(counts->count(i) != 0) 
+					fprintf(stdout, "%zu\t%llu\n", i, counts->at(i));
+
+		}
+	}
+	// If we aren't printing nonzeros print everything
+	else {
+		if(label) {
+			for(i = 0; i < width; i++) {
+				char *kmer_str = index_to_kmer(i, kmer);
+				if(counts->count(i) != 0)
+					fprintf(stdout, "%s\t%llu\n", kmer_str, counts->at(i));
+				else
+					fprintf(stdout, "%s\t0\n", kmer_str);
+				free(kmer_str); 
+			} 
+		}
+		else {
+			for(i = 0; i < width; i++) {
+				if(counts->count(i) != 0)
+					fprintf(stdout, "%llu\n", counts->at(i));
+				else
+					fprintf(stdout, "0\n");
+			}
+		}
 	}
 }
