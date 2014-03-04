@@ -12,15 +12,16 @@ unsigned long long pow_four(unsigned long long x);
 
 // Variables
 typedef unordered_map<size_t,unsigned long long> kmer_map;
-
+unsigned char alpha[256]; 
 // file loading functions
 kmer_map *get_sparse_kmer_counts_from_filename(const char *fn, const unsigned int kmer);
 kmer_map *get_sparse_kmer_counts_from_file(FILE *fh, int kmer);
 
-unsigned long long * get_dense_kmer_counts_from_file(FILE *fh, const unsigned int kmer);
+unsigned long long *get_dense_kmer_counts_from_file(FILE *fh, const unsigned int kmer);
+unsigned long long *get_dense_kmer_counts_from_filename(const char *fn, const unsigned int kmer);
 
-
+size_t load_specific_mers_from_file(char *fn, unsigned int kmer, size_t width, size_t *arr);
+// print functions
 void print_kmer(unsigned long long *counts, bool label, bool nonzero, unsigned int kmer);
 void print_kmer(kmer_map *counts, bool label, bool nonzero, unsigned int kmer);
 
-unsigned char alpha[256]; 
