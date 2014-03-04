@@ -4,21 +4,19 @@ CFLAGS = -O3 -s -mtune=native -Wall -Wextra -DVERSION=$(VERSION) -std=c++11
 DESTDIR = /usr/local/
 
 
-all: libkmer.o libkmer.so kmer_total_count kmer_counts_per_sequence
+all: kmer_utils.o libkmer.so kmer_total_count kmer_counts_per_sequence
 
-sparse.o: sparse.c
-	$(CC) -c sparse.c -o sparse.o $(CFLAGS) 
-libkmer.o: kmer_utils.c
-	$(CC) -c kmer_utils.c -o libkmer.o $(CFLAGS) -fPIC
-libkmer.so: libkmer.o
+kmer_utils.o: kmer_utils.c
+	$(CC) -c kmer_utils.c -o kmer_utils.o $(CFLAGS) -fPIC
+libkmer.so: kmer_utils.o
 	$(CC) kmer_utils.c -o libkmer.so $(CFLAGS) -shared -fPIC
-kmer_total_count: kmer_utils.c kmer_total_count.c kmer_utils.h
-	$(CC) kmer_utils.c kmer_total_count.c -o kmer_total_count $(CLIBS) $(CFLAGS)
-kmer_counts_per_sequence: libkmer.o kmer_counts_per_sequence.c kmer_utils.h
-	$(CC) libkmer.o kmer_counts_per_sequence.c -o kmer_counts_per_sequence $(CLIBS) $(CFLAGS)
+kmer_total_count: kmer_utils.o kmer_total_count.c kmer_utils.h
+	$(CC) kmer_utils.o kmer_total_count.c -o kmer_total_count $(CLIBS) $(CFLAGS)
+kmer_counts_per_sequence: kmer_utils.o kmer_counts_per_sequence.c kmer_utils.h
+	$(CC) kmer_utils.o kmer_counts_per_sequence.c -o kmer_counts_per_sequence $(CLIBS) $(CFLAGS)
 
 clean:
-	rm -vf kmer_total_count kmer_counts_per_sequence libkmer.so libkmer.o
+	rm -vf kmer_total_count kmer_counts_per_sequence kmer_utils.o libkmer.so
 
 debug: CFLAGS = -ggdb -Wall -Wextra -DVERSION=$(VERSION)\"-debug\"
 debug: all
