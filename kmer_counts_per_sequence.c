@@ -130,7 +130,7 @@ int main(int argc, char **argv) {
 
 	if(specific_mers) {
 		sparse = false;
-		desired_indicies = malloc((width) * sizeof(size_t));
+		desired_indicies = (size_t *) malloc((width) * sizeof(size_t));
 		if(desired_indicies == NULL) 
 			exit(EXIT_FAILURE);
 		num_desired_indicies = load_specific_mers_from_file(mer_fn, kmer, width, desired_indicies);
@@ -141,7 +141,7 @@ int main(int argc, char **argv) {
 	}
 
 
-	unsigned long long *counts = malloc((width+ 1) * sizeof(unsigned long long));
+	unsigned long long *counts = (unsigned long long *) malloc((width+ 1) * sizeof(unsigned long long));
 	if(counts == NULL) 
 		exit(EXIT_FAILURE);
 
