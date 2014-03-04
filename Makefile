@@ -13,7 +13,7 @@ libkmer.o: kmer_utils.c
 libkmer.so: libkmer.o
 	$(CC) kmer_utils.c -o libkmer.so $(CFLAGS) -shared -fPIC
 kmer_total_count: kmer_utils.c kmer_total_count.c kmer_utils.h
-	$(CC) kmer_utils.cpp kmer_total_count.c -o kmer_total_count $(CLIBS) $(CFLAGS)
+	$(CC) kmer_utils.c kmer_total_count.c -o kmer_total_count $(CLIBS) $(CFLAGS)
 kmer_counts_per_sequence: libkmer.o kmer_counts_per_sequence.c kmer_utils.h
 	$(CC) libkmer.o kmer_counts_per_sequence.c -o kmer_counts_per_sequence $(CLIBS) $(CFLAGS)
 
