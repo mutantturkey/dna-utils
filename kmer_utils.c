@@ -218,7 +218,6 @@ kmer_map *get_sparse_kmer_counts_from_file(FILE *fh, int kmer) {
 			// for each char in the k-mer check if it is an error char
 			for(i = position + kmer - 1; i >= position; i--){
 				if(seq[i] == 5) { 
-					mer = width;
 					position = i;
 					goto next;
 				}
@@ -228,12 +227,9 @@ kmer_map *get_sparse_kmer_counts_from_file(FILE *fh, int kmer) {
 				mer += seq[i] * multiply;
 				multiply = multiply << 2;
 			}
-			// use this point to get mer of our loop
-			next:
-			{
-				// bump up the mer value in the counts array
-				(*counts)[mer]++;
-			}
+			// bump up the mer value in the counts array
+			(*counts)[mer]++;
+			next: ;
 		}
 	} 
 
@@ -291,7 +287,6 @@ unsigned long long * get_dense_kmer_counts_from_file(FILE *fh, const unsigned in
 			// for each char in the k-mer check if it is an error char
 			for(i = position + kmer - 1; i >= position; i--){
 				if(seq[i] == 5) { 
-					mer = width;
 					position = i;
 					goto next;
 				}
@@ -301,12 +296,9 @@ unsigned long long * get_dense_kmer_counts_from_file(FILE *fh, const unsigned in
 				mer += seq[i] * multiply;
 				multiply = multiply << 2;
 			}
-			// use this point to get mer of our loop
-			next:
-			{
-				// bump up the mer value in the counts array
-				counts[mer]++;
-			}
+			// bump up the mer value in the counts array
+			counts[mer]++;
+			next: ;
 		}
 	}
 
