@@ -8,16 +8,46 @@
 
 #include "kmer_utils.h"
 
+template <typename array_type>
+void count_sequence(const char *seq, const size_t seq_length, const unsigned int kmer, array_type *counts) {
+	long long position;
+	long long i;
+
+	// loop through our seq to process each k-mer
+	for(position = 0; position < (signed)(seq_length - kmer + 1); position++) {
+		unsigned long long mer = 0;
+		unsigned long long multiply = 1;
+
+		// for each char in the k-mer check if it is an error char
+		for(i = position + kmer - 1; i >= position; i--){
+			if(seq[i] == 5) {
+				position = i;
+				goto next;
+			}
+
+			// multiply this char in the mer by the multiply
+			// and bitshift the multiply for the next round
+			mer += seq[i] * multiply;
+			multiply = multiply << 2;
+		}
+		// bump up the mer value in the counts array
+		inc(counts, mer);
+
+		// skip count if error
+		next: ;
+	}
+}
 
 void help() {
 	printf("usage: kmer_total_count -i input_file -k kmer [-c] [-n] [-l] ...\n\n"
 				 "count mers in size k from a fasta file\n"
 				 "\n"
-				 "  --input      -i  input fasta file to count\n"
-				 "  --kmer       -k  size of mers to count\n"
+				 "  --input    -i  input fasta file to count\n"
+				 "  --kmer     -k  size of mers to count\n"
 				 "  --compliment -c  count compliment of sequences\n"
-				 "  --nonzero    -n  only print non-zero values\n"
-				 "  --label      -l  print mer along with value\n"
+				 "  --nonzero  -n  only print non-zero values\n"
+				 "  --label    -l  print mer along with value\n"
+				 "  --sparse   -s  force sparse table for any mer\n"
 				 "\n"
 				 "Report all bugs to mutantturkey@gmail.com\n"
 				 "\n"
@@ -41,10 +71,7 @@ int main(int argc, char **argv) {
 	bool label = false;
 	bool kmer_set = false;
 	bool count_compliment = false;
-
-	unsigned long long width = 0;
-
-	unsigned long long i = 0;
+	bool force_sparse = false;
 
 	static struct option long_options[] = {
 		{"input", required_argument, 0, 'i'},
@@ -52,6 +79,7 @@ int main(int argc, char **argv) {
 		{"compliment", required_argument, 0, 'c'},
 		{"nonzero", no_argument, 0, 'n'},
 		{"label", no_argument, 0, 'l'},
+		{"sparse", no_argument, 0, 's'},
 		{"help", no_argument, 0, 'h'},
 		{0, 0, 0, 0}
 	};
@@ -61,7 +89,7 @@ int main(int argc, char **argv) {
 		int option_index = 0;
 		int c = 0;
 
-		c = getopt_long (argc, argv, "i:k:cnlvh", long_options, &option_index);
+		c = getopt_long (argc, argv, "i:k:cnslvh", long_options, &option_index);
 
 		if (c == -1)
 			break;
@@ -82,6 +110,9 @@ int main(int argc, char **argv) {
 				break;
 			case 'l':
 				label = true;
+				break;
+			case 's':
+				force_sparse = true;
 				break;
 			case 'h':
 				help();
@@ -119,45 +150,17 @@ int main(int argc, char **argv) {
 		exit(EXIT_FAILURE);
 	}
 
-	width = pow_four(kmer);
+	if(kmer > 12 || force_sparse) {
+		kmer_map *counts = NULL;
+		kmer_map *res = get_kmer_counts_from_file(counts, fh, kmer, count_compliment);
 
-	unsigned long long *counts = get_kmer_counts_from_file(fh, kmer, count_compliment);
-
-	// If nonzero is set, only print non zeros
-	if(nonzero) {
-		// if labels is set, print out our labels
-		if(label) {
-			for(i = 0; i < width; i++)
-				if(counts[i] != 0) {
-					char *kmer_str = index_to_kmer(i, kmer);
-					fprintf(stdout, "%s\t%llu\n", kmer_str, counts[i]);
-					free(kmer_str);
-				}
-
-		}
-		else {
-			for(i = 0; i < width; i++)
-				if(counts[i] != 0) 
-					fprintf(stdout, "%llu\t%llu\n", i, counts[i]);
-
-		}
+		print_kmer(res, label, nonzero, kmer);
 	}
-	// If we aren't printing nonzeros print everything
 	else {
-		if(label) {
-			for(i = 0; i < width; i++) {
-				char *kmer_str = index_to_kmer(i, kmer);
-				fprintf(stdout, "%s\t%llu\n", kmer_str, counts[i]);
-				free(kmer_str);
-			} 
-		}
-		else {
-			for(i = 0; i < width; i=i+4) {
-				fprintf(stdout, "%llu\n%llu\n%llu\n%llu\n", counts[i], counts[i+1], counts[i+2], counts[i+3]);
-			}
-		}
+		unsigned long long *counts = NULL;
+		unsigned long long *res = get_kmer_counts_from_file(counts, fh, kmer, count_compliment);
+		print_kmer(res, label, nonzero, kmer);
 	}
 
-	free(counts);
 	return EXIT_SUCCESS;
 }

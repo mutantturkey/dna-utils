@@ -5,6 +5,23 @@
 #include <string.h>
 #include <stdbool.h>
 
+#include <unordered_map>
+
+using namespace std;
+
+typedef struct {
+	size_t operator() (const size_t &k) const {
+	return k;
+	}
+} kmer_noHash_hash;
+
+typedef struct {
+	bool operator() (const size_t &x, const size_t &y) const {
+		return x == y;
+	}
+} kmer_eq; 
+
+typedef unordered_map<size_t, unsigned long long, kmer_noHash_hash, kmer_eq> kmer_map;
 
 const unsigned char alpha[256] =
 {5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
@@ -52,35 +69,6 @@ void reverse_string(char *s, size_t len) {
 	}
 }
 
-void count_sequence(const char *seq, const size_t seq_length, const unsigned int kmer, unsigned long long *counts) {
-	long long position;
-	long long i;
-
-	// loop through our seq to process each k-mer
-	for(position = 0; position < (signed)(seq_length - kmer + 1); position++) {
-		unsigned long long mer = 0;
-		unsigned long long multiply = 1;
-
-		// for each char in the k-mer check if it is an error char
-		for(i = position + kmer - 1; i >= position; i--){
-			if(seq[i] == 5) {
-				position = i;
-				goto next;
-			}
-
-			// multiply this char in the mer by the multiply
-			// and bitshift the multiply for the next round
-			mer += seq[i] * multiply;
-			multiply = multiply << 2;
-		}
-		// bump up the mer value in the counts array
-		counts[mer]++;
-
-		// skip count if error
-		next: ;
-	}
-}
-
 // convert a string of k-mer size base-4 values  into a
 // base-10 index
 unsigned long num_to_index(const char *str, const int kmer, const long error_pos, long long *current_position) {
@@ -103,7 +91,7 @@ unsigned long num_to_index(const char *str, const int kmer, const long error_pos
 }
 
 // return the number of loaded elements
-unsigned long long load_specific_mers_from_file(char *fn, unsigned int kmer, size_t width, size_t *arr) {
+size_t load_specific_mers_from_file(char *fn, unsigned int kmer, size_t width, size_t *arr) { 
 		FILE *fh;
 		size_t arr_pos = 0;
 		char line[64];
@@ -152,8 +140,8 @@ char *index_to_kmer(unsigned long long index, long kmer)  {
 
 	size_t i = 0;
 	size_t j = 0;
-	char *num_array = calloc(kmer,  sizeof(char));
-	char *ret = calloc(kmer + 1, sizeof(char));
+	char *num_array = (char *) calloc(kmer,  sizeof(char));
+	char *ret = (char *)  calloc(kmer + 1, sizeof(char));
 	check_null_ptr(num_array, NULL);
 	check_null_ptr(ret, NULL);
 		
@@ -211,19 +199,74 @@ size_t strnstrip(char *s, int c, size_t len) {
 
 }
 
-unsigned long long * get_kmer_counts_from_file(FILE *fh, const unsigned int kmer, const bool count_compliment) {
+static void inc(kmer_map *map, size_t index) {
+	(*map)[index]++;
+}
+
+static void inc(unsigned long long *counts, size_t index) {
+	counts[index]++;
+}
+
+template <typename array_type>
+void count_sequence(const char *seq, const size_t seq_length, const unsigned int kmer, array_type *counts) {
+	long long position;
+	long long i;
+
+	// loop through our seq to process each k-mer
+	for(position = 0; position < (signed)(seq_length - kmer + 1); position++) {
+		unsigned long long mer = 0;
+		unsigned long long multiply = 1;
+
+		// for each char in the k-mer check if it is an error char
+		for(i = position + kmer - 1; i >= position; i--){
+			if(seq[i] == 5) {
+				position = i;
+				goto next;
+			}
+
+			// multiply this char in the mer by the multiply
+			// and bitshift the multiply for the next round
+			mer += seq[i] * multiply;
+			multiply = multiply << 2;
+		}
+		// bump up the mer value in the counts array
+		inc(counts, mer);
+
+		// skip count if error
+		next: ;
+	}
+}
+
+
+void create_array(kmer_map **counts, int kmer) {
+	*counts = new kmer_map();
+	(*counts)->reserve(pow_four(kmer) / 2 );
+}
+
+void create_array(unsigned long long **counts, const unsigned int kmer) {
+	// width is 4^kmer  
+	const unsigned long long width = pow_four(kmer); 
 	
+	*counts = (unsigned long long *) calloc(width+1, sizeof(unsigned long long));
+	if(counts == NULL) {
+		exit(EXIT_FAILURE);
+	}
+	else {
+	}
+}
+
+template <typename array_type>
+array_type * get_kmer_counts_from_file(array_type *counts, FILE *fh, const unsigned int kmer, const bool count_compliment) {
+
 	char *line = NULL;
 	size_t len = 0;
 	ssize_t read;
 
-	// width is 4^kmer  
-	// there's a sneaky bitshift to avoid pow dependency
-	const unsigned long width = pow_four(kmer); 
-
-	// malloc our return array
-	unsigned long long * counts = calloc((width+ 1), sizeof(unsigned long long));
-	check_null_ptr(counts, NULL);
+	create_array(&counts, kmer);
+	if(counts == NULL) {
+		puts("Counts is null");
+		exit(EXIT_FAILURE);
+	}
 
 	while ((read = getdelim(&line, &len, '>', fh)) != -1) {
 		size_t k;
@@ -260,18 +303,33 @@ unsigned long long * get_kmer_counts_from_file(FILE *fh, const unsigned int kmer
 		}
 	}
 
-
-  free(line);
+  	free(line);
 	fclose(fh);
 
 	return counts;
 }
 
-unsigned long long * get_kmer_counts_from_filename(const char *fn, const unsigned int kmer, const bool count_compliment) {
+kmer_map * get_kmer_counts_from_filename(kmer_map *counts, const char *fn, const unsigned int kmer, const bool count_compliment) {
 		FILE *fh = fopen(fn, "r");
 		check_null_ptr(fh, fn);
 
-		return get_kmer_counts_from_file(fh, kmer, count_compliment);
+		// Why does this work this way!!?
+		kmer_map *counts2 = get_kmer_counts_from_file(counts, fh, kmer, count_compliment);
+		if(counts == NULL) {
+			puts("NULL IN FILENAME");
+		}
+
+		return counts2;
+
+}
+
+
+unsigned long long * get_kmer_counts_from_filename(unsigned long long *counts, const char *fn, const unsigned int kmer, const bool count_compliment) {
+		FILE *fh = fopen(fn, "r");
+		check_null_ptr(fh, fn);
+
+		unsigned long long *counts2 = get_kmer_counts_from_file(counts, fh, kmer, count_compliment);
+		return counts2;
 }
 
 unsigned long long * get_continuous_kmer_counts_from_file(FILE *fh, const unsigned int kmer, const bool count_compliment) {
@@ -285,12 +343,12 @@ unsigned long long * get_continuous_kmer_counts_from_file(FILE *fh, const unsign
 	const unsigned long width = pow_four(kmer); 
 
 	// malloc our return array
-	unsigned long long * counts = calloc((width+ 1), sizeof(unsigned long long));
+	unsigned long long * counts = (unsigned long long *) calloc((width+ 1), sizeof(unsigned long long));
 	check_null_ptr(counts, NULL);
 
 	size_t cpy_size = kmer - 1;
 
-	char *end_of_previous = malloc(sizeof(char) * cpy_size);
+	char *end_of_previous = (char*) malloc(sizeof(char) * cpy_size);
 	check_null_ptr(end_of_previous, NULL);
 	memset(end_of_previous, 5, cpy_size);
 
@@ -298,12 +356,11 @@ unsigned long long * get_continuous_kmer_counts_from_file(FILE *fh, const unsign
 		if(line[0] == '>')
 			continue;
 
-		char *seq;
 		size_t j;
 		size_t k;
 		size_t seq_length;
 
-		seq = malloc(read + cpy_size);
+		char *seq = (char *) malloc(read + cpy_size);
 
 		memcpy(seq, end_of_previous, cpy_size);
 		memcpy(seq + cpy_size, line, read);
@@ -329,11 +386,12 @@ unsigned long long * get_continuous_kmer_counts_from_file(FILE *fh, const unsign
 			count_sequence(seq, seq_length, kmer, counts);
 		}
 
-				free(seq);
+
+		free(seq);
 	}
 
 	free(end_of_previous);
-  free(line);
+	free(line);
 	fclose(fh);
 
 	return counts;
@@ -344,4 +402,88 @@ unsigned long long * get_continuous_kmer_counts_from_filename(const char *fn, co
 		check_null_ptr(fh, fn);
 
 		return get_continuous_kmer_counts_from_file(fh, kmer, count_compliment);
+}
+
+void print_kmer(unsigned long long *counts, bool label, bool nonzero, unsigned int kmer) {
+	size_t width = pow_four(kmer);
+	size_t i = 0;
+
+	// If nonzero is set, only print non zeros
+	if(nonzero) {
+		// if labels is set, print out our labels
+		if(label) {
+			for(i = 0; i < width; i++)
+				if(counts[i] != 0) {
+					char *kmer_str = index_to_kmer(i, kmer);
+					fprintf(stdout, "%s\t%llu\n", kmer_str, counts[i]);
+					free(kmer_str);
+				}
+
+		}
+		else {
+			for(i = 0; i < width; i++)
+				if(counts[i] != 0) 
+					fprintf(stdout, "%zu\t%llu\n", i, counts[i]);
+
+		}
+	}
+	// If we aren't printing nonzeros print everything
+	else {
+		if(label) {
+			for(i = 0; i < width; i++) {
+				char *kmer_str = index_to_kmer(i, kmer);
+				fprintf(stdout, "%s\t%llu\n", kmer_str, counts[i]);
+				free(kmer_str);
+			} 
+		}
+		else {
+			for(i = 0; i < width; i=i+4) {
+				fprintf(stdout, "%llu\n%llu\n%llu\n%llu\n", counts[i], counts[i+1], counts[i+2], counts[i+3]);
+			}
+		}
+
+	}
+}
+
+void print_kmer(kmer_map *counts, bool label, bool nonzero, unsigned int kmer) {
+	size_t width = pow_four(kmer);
+	size_t i = 0;
+
+	// If nonzero is set, only print non zeros
+	if(nonzero) {
+		// if labels is set, print out our labels
+		if(label) {
+			for(auto it = counts->begin(); it != counts->end(); it++ ) {
+				char *kmer_str = index_to_kmer(it->first, kmer);
+				fprintf(stdout, "%s\t%llu\n", kmer_str, it->second);
+				free(kmer_str);
+			}
+		}
+		else {
+			for(auto it = counts->begin(); it != counts->end(); it++ ) {
+				fprintf(stdout, "%zu\t%llu\n", it->first, it->second);
+			}
+		}
+	}
+	// If we aren't printing nonzeros print everything
+	else {
+		if(label) {
+			for(i = 0; i < width; i++) {
+				char *kmer_str = index_to_kmer(i, kmer);
+				if(counts->count(i) != 0)
+					fprintf(stdout, "%s\t%llu\n", kmer_str, counts->at(i));
+				else
+					fprintf(stdout, "%s\t0\n", kmer_str);
+				free(kmer_str); 
+			} 
+		}
+		else {
+			for(i = 0; i < width; i++) {
+				if(counts->count(i) != 0)
+					fprintf(stdout, "%llu\n", counts->at(i));
+				else
+					fprintf(stdout, "0\n");
+			}
+		}
+	}
 }

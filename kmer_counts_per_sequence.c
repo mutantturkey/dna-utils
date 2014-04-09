@@ -30,7 +30,43 @@ void help() {
 				 "dna-utils. Drexel University, Philadelphia USA, 2014;\n"
 				 "software available at www.github.com/EESI/dna-utils/\n");
 }
+static void inc(kmer_map *map, size_t index) {
+	(*map)[index]++;
+}
 
+static void inc(unsigned long long *counts, size_t index) {
+	counts[index]++;
+}
+
+template <typename array_type>
+void count_sequence(const char *seq, const size_t seq_length, const unsigned int kmer, array_type *counts) {
+	long long position;
+	long long i;
+
+	// loop through our seq to process each k-mer
+	for(position = 0; position < (signed)(seq_length - kmer + 1); position++) {
+		unsigned long long mer = 0;
+		unsigned long long multiply = 1;
+
+		// for each char in the k-mer check if it is an error char
+		for(i = position + kmer - 1; i >= position; i--){
+			if(seq[i] == 5) {
+				position = i;
+				goto next;
+			}
+
+			// multiply this char in the mer by the multiply
+			// and bitshift the multiply for the next round
+			mer += seq[i] * multiply;
+			multiply = multiply << 2;
+		}
+		// bump up the mer value in the counts array
+		inc(counts, mer);
+
+		// skip count if error
+		next: ;
+	}
+}
 
 int main(int argc, char **argv) {
 
@@ -135,8 +171,10 @@ int main(int argc, char **argv) {
  	width = pow_four(kmer);
 
 	if(specific_mers) {
-		desired_indicies = malloc((width) * sizeof(size_t));
-		check_null_ptr(desired_indicies, NULL);
+		sparse = false;
+		desired_indicies = (size_t *) malloc((width) * sizeof(size_t));
+		if(desired_indicies == NULL) 
+			exit(EXIT_FAILURE);
 		num_desired_indicies = load_specific_mers_from_file(mer_fn, kmer, width, desired_indicies);
 		if(num_desired_indicies == 0) {
 			fprintf(stderr, "Error: no mers loaded from file\n"); 
@@ -145,7 +183,7 @@ int main(int argc, char **argv) {
 	}
 
 
-	unsigned long long *counts = malloc((width+ 1) * sizeof(unsigned long long));
+	unsigned long long *counts = (unsigned long long *) malloc((width+ 1) * sizeof(unsigned long long));
 	if(counts == NULL)  {
 		fprintf(stderr, "%s\n", strerror(errno));
 		exit(EXIT_FAILURE);
