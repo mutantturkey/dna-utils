@@ -5,7 +5,7 @@ DESTDIR = /usr/local/
 
 all: libkmer.so kmer_total_count kmer_counts_per_sequence kmer_utils.o kmer_locations
 
-kmer_utils.o:
+kmer_utils.o: kmer_utils.c
 	$(CC) -c kmer_utils.c -O $(CFLAGS) -fPIC
 
 libkmer.so: kmer_utils.o
