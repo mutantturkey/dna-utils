@@ -1,6 +1,6 @@
 VERSION=\"0.0.5\"
 CC = g++
-CFLAGS = -O3 -s -mtune=native -Wall -Wextra -DVERSION=$(VERSION) -std=c++11
+CFLAGS = -O3 -s -march=native -Wall -Wextra -DVERSION=$(VERSION) -std=c++11
 DESTDIR = /usr/local/
 
 all: libkmer.so kmer_total_count kmer_counts_per_sequence
