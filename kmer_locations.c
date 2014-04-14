@@ -215,16 +215,14 @@ int main(int argc, char **argv) {
 			exit(EXIT_FAILURE);
 		}
 
-		labeled_mers = (char**) malloc(sizeof(char **));
+		labeled_mers = (char**) malloc(sizeof(char **) * num_desired_indicies);
 		check_null_ptr(labeled_mers, NULL);
 		for(j = 0; j < num_desired_indicies; j++) {
 			labeled_mers[j] = index_to_kmer(desired_indicies[j], kmer);
 		}
 	}
 
-
 	unsigned long long global_position = 0;
-
 	while ((read = getdelim(&line, &len, '>', fh)) != -1) {
 		size_t k = 0;
 
@@ -239,9 +237,6 @@ int main(int argc, char **argv) {
 
 		// strip out all other newlines to handle multiline sequences
 		size_t seq_length = strnstrip(seq, '\n', strlen(seq));
-
-		if(seq[seq_length - 1] == '>') 
-			seq_length --;
 
 		for(k = 0; k < seq_length; k++) {
 			seq[k] = alpha[(int)seq[k]];
@@ -273,6 +268,7 @@ int main(int argc, char **argv) {
 
 	free(line);
 	free(desired_indicies);
+	free(labeled_mers);
 	fclose(fh);
 
 	return EXIT_SUCCESS;
