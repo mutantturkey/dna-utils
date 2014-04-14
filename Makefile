@@ -23,8 +23,7 @@ kmer_continuous_count: kmer_utils.o kmer_continuous_count.c kmer_utils.h
 kmer_locations: kmer_utils.o kmer_locations.c kmer_utils.h
 	$(CC) kmer_utils.o kmer_locations.c -o kmer_locations $(CLIBS) $(CFLAGS)
 clean:
-	rm -vf kmer_total_count kmer_counts_per_sequence kmer_continuous_count kmer_utils.o libkmer.so
-	rm -vf kmer_total_count kmer_counts_per_sequence kmer_continuous_count libkmer.so kmer_utils.o
+	rm -vf kmer_locations kmer_total_count kmer_counts_per_sequence kmer_continuous_count kmer_utils.o libkmer.so
 
 debug: CFLAGS = -ggdb -Wall -Wextra -DVERSION=$(VERSION)\"-debug\" -std=c++11
 debug: all
