@@ -1,9 +1,10 @@
 VERSION=\"0.0.5\"
 CC = g++
 CFLAGS = -O3 -s -march=native -Wall -Wextra -DVERSION=$(VERSION) -std=c++11
-DESTDIR = /usr/local/
+DESTDIR = /usr/local
 
-all: libkmer.so kmer_total_count kmer_counts_per_sequence kmer_utils.o kmer_locations
+all: libkmer.so kmer_total_count kmer_counts_per_sequence kmer_utils.o \
+		 kmer_locations kmer_continuous_count
 
 kmer_utils.o: kmer_utils.c
 	$(CC) -c kmer_utils.c -O $(CFLAGS) -fPIC
@@ -23,12 +24,16 @@ kmer_continuous_count: kmer_utils.o kmer_continuous_count.c kmer_utils.h
 kmer_locations: kmer_utils.o kmer_locations.c kmer_utils.h
 	$(CC) kmer_utils.o kmer_locations.c -o kmer_locations $(CLIBS) $(CFLAGS)
 clean:
-	rm -vf kmer_locations kmer_total_count kmer_counts_per_sequence kmer_continuous_count kmer_utils.o libkmer.so
+	rm -vf kmer_total_count kmer_counts_per_sequence kmer_continuous_count \
+	kmer_utils.o libkmer.so kmer_locations
 
 debug: CFLAGS = -ggdb -Wall -Wextra -DVERSION=$(VERSION)\"-debug\" -std=c++11
 debug: all
 
 install: all
-	@cp -vf kmer_counts_per_sequence kmer_total_count kmer_continuous_count $(DESTDIR)/bin/
-	@cp -vf  libkmer.so  $(DESTDIR)/lib/
+	install kmer_counts_per_sequence $(DESTDIR)/bin
+	install kmer_total_count $(DESTDIR)/bin
+	install kmer_continuous_count $(DESTDIR)/bin
+	install kmer_locations $(DESTDIR)/bin
+	cp -vf  libkmer.so  $(DESTDIR)/lib/
 

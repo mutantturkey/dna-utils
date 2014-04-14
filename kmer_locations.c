@@ -223,7 +223,6 @@ int main(int argc, char **argv) {
 	}
 
 
-	unsigned long long sequence = 0;
 	unsigned long long global_position = 0;
 
 	while ((read = getdelim(&line, &len, '>', fh)) != -1) {
@@ -240,6 +239,9 @@ int main(int argc, char **argv) {
 
 		// strip out all other newlines to handle multiline sequences
 		size_t seq_length = strnstrip(seq, '\n', strlen(seq));
+
+		if(seq[seq_length - 1] == '>') 
+			seq_length --;
 
 		for(k = 0; k < seq_length; k++) {
 			seq[k] = alpha[(int)seq[k]];
@@ -266,7 +268,6 @@ int main(int argc, char **argv) {
 		if(seq_length != 0) {
 			seq_length--;
 		}
-		sequence++;
 		global_position += seq_length;
 	}
 
