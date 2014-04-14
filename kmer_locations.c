@@ -260,9 +260,6 @@ int main(int argc, char **argv) {
 			print_sequence(seq, rev_seq_length, global_position, kmer, desired_indicies, labeled_mers, num_desired_indicies, label, true);
 		}
 
-		if(seq_length != 0) {
-			seq_length--;
-		}
 		global_position += seq_length;
 	}
 
