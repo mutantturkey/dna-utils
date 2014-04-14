@@ -8,7 +8,7 @@
 
 #include "kmer_utils.h"
 
-void print_mer(unsigned long long mer, long const long pos, const bool labels, const bool reverse, unsigned int kmer, char *label) {
+void print_mer(unsigned long long mer, const long long pos, const bool labels, const bool reverse, unsigned int kmer, char *label) {
 	if(labels) {
 		char *kmer_str;
 		bool free_ptr = false;
@@ -67,15 +67,21 @@ void print_sequence(const char *seq, // sequence
 		}
 		
 		// bump up the mer value in the counts array
+		long long pos;
+		if(!reverse)
+			pos = global_pos + position;
+		else
+			pos = global_pos + ((signed)seq_length - position);
+
 		if(num_specific_mers != 0) {
 			size_t j;
 			for(j = 0; j < num_specific_mers; j++) {
 				if(mer == specific_mers[j])
-					print_mer(mer, position + global_pos, labels, reverse, kmer, specific_mers_labels[j]);
+					print_mer(mer, pos, labels, reverse, kmer, specific_mers_labels[j]);
 			}
 		}
 		else {
-			print_mer(mer, position + global_pos, labels, reverse, kmer, NULL);
+			print_mer(mer, pos, labels, reverse, kmer, NULL);
 		}
 		// skip count if error
 		next: ;
