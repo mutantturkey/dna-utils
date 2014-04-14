@@ -59,7 +59,6 @@ void check_null_ptr(void *ptr, const char *error) {
 	}
 }
 
-
 void reverse_string(char *s, size_t len) {
 	char t, *d = &(s[len - 1]);
 	while (d > s) {
@@ -110,6 +109,9 @@ size_t load_specific_mers_from_file(char *fn, unsigned int kmer, size_t width, s
 			len--;
 			line[len] = '\0';
 
+			char *copy = (char *) malloc(len);
+			check_null_ptr(copy, NULL);
+			memcpy(copy, line, len);
 
 			if(len != kmer)  {
 				fprintf(stderr, "SKIPPING: '%s' is not length %u\n", line, kmer);
@@ -119,16 +121,18 @@ size_t load_specific_mers_from_file(char *fn, unsigned int kmer, size_t width, s
 			for(i = 0; i < len; i++) {
 				line[i] = alpha[(int)line[i]];
 			}
-				
+
 		 	size_t mer = num_to_index(line, kmer, width, NULL);
 			if(mer == width) {
-				fprintf(stderr, "SKIPPING: '%s' is a unrecognized mer\n", line);
+				fprintf(stderr, "SKIPPING: '%s' is a unrecognized mer\n", copy);
+				free(copy);
 				continue;
 			}
 			else {
 				arr[arr_pos] = mer;
 				arr_pos++;
 			}
+			free(copy);
 		}
 
 		fclose(fh);

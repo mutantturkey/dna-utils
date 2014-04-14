@@ -8,14 +8,24 @@
 
 #include "kmer_utils.h"
 
-void print_mer(unsigned long long mer, long long pos, bool labels, bool reverse, unsigned int kmer) {
+void print_mer(unsigned long long mer, long const long pos, const bool labels, const bool reverse, unsigned int kmer, char *label) {
 	if(labels) {
-		char *kmer_str = index_to_kmer(mer, kmer);
+		char *kmer_str;
+		bool free_ptr = false;
+		if(label == NULL) {
+			kmer_str = index_to_kmer(mer, kmer);
+			free_ptr = true;
+		}
+		else {
+			kmer_str = label;
+		}
+
 		if(reverse)
 			printf("%s %llu c\n", kmer_str, pos);
 		else
 			printf("%s %llu\n", kmer_str, pos);
-		free(kmer_str);
+		if (free_ptr)
+			free(kmer_str);
 	}
 	else {
 		if(reverse)
@@ -30,6 +40,7 @@ void print_sequence(const char *seq, // sequence
 										const size_t global_pos,  // overall position in read
 										const unsigned int kmer,  // kmer size
 									  size_t *specific_mers, // specific mers  array
+									  char   **specific_mers_labels, // specific mers  array
 										size_t num_specific_mers,
 										bool labels,  // print label instead of indicies
 										bool reverse) // reverse points
@@ -60,11 +71,11 @@ void print_sequence(const char *seq, // sequence
 			size_t j;
 			for(j = 0; j < num_specific_mers; j++) {
 				if(mer == specific_mers[j])
-					print_mer(mer, position + global_pos, labels, reverse, kmer);
+					print_mer(mer, position + global_pos, labels, reverse, kmer, specific_mers_labels[j]);
 			}
 		}
 		else {
-			print_mer(mer, position + global_pos, labels, reverse, kmer);
+			print_mer(mer, position + global_pos, labels, reverse, kmer, NULL);
 		}
 		// skip count if error
 		next: ;
@@ -110,13 +121,12 @@ int main(int argc, char **argv) {
 	char *mer_fn = NULL;
 	size_t num_desired_indicies = 0;
 	size_t *desired_indicies = NULL;
+	char **labeled_mers = NULL;
 
 	bool label = false;
 	bool kmer_set = false;
 	bool specific_mers = false;
 	bool count_compliment = false;
-
-	unsigned long long width = 0;
 
 	static struct option long_options[] = {
 		{"input", required_argument, 0, 'i'},
@@ -150,7 +160,7 @@ int main(int argc, char **argv) {
 				count_compliment = true;
 				break;
 			case 'm':
-				specific_mers = false;
+				specific_mers = true;
 				mer_fn = optarg;
 				break;
 			case 'l':
@@ -193,13 +203,22 @@ int main(int argc, char **argv) {
 	}
 
 	if(specific_mers) {
+		size_t j; 
+		size_t width = pow_four(kmer);
 		desired_indicies = (size_t *) malloc((width) * sizeof(size_t));
 		if(desired_indicies == NULL) 
 			exit(EXIT_FAILURE);
+
 		num_desired_indicies = load_specific_mers_from_file(mer_fn, kmer, width, desired_indicies);
 		if(num_desired_indicies == 0) {
 			fprintf(stderr, "Error: no mers loaded from file\n"); 
 			exit(EXIT_FAILURE);
+		}
+
+		labeled_mers = (char**) malloc(sizeof(char **));
+		check_null_ptr(labeled_mers, NULL);
+		for(j = 0; j < num_desired_indicies; j++) {
+			labeled_mers[j] = index_to_kmer(desired_indicies[j], kmer);
 		}
 	}
 
@@ -226,23 +245,29 @@ int main(int argc, char **argv) {
 			seq[k] = alpha[(int)seq[k]];
 		}
 		
-		print_sequence(seq, seq_length, global_position, kmer, desired_indicies, num_desired_indicies, label, false);
+		print_sequence(seq, seq_length, global_position, kmer, desired_indicies, labeled_mers, num_desired_indicies, label, false);
 
 		if(count_compliment) {
 			for(k = 0; k < seq_length; k++) { 
 				seq[k] = compliment[(int)seq[k]];
 			}
-			
 			reverse_string(seq, seq_length);
-			print_sequence(seq, seq_length, global_position, kmer, desired_indicies, num_desired_indicies, label, true);
+			size_t rev_seq_length = seq_length;
+
+			// chomp all errors off the beginning
+			while(*seq == 5)  {
+			 rev_seq_length--;
+			 seq++;
+			}
+
+			print_sequence(seq, rev_seq_length, global_position, kmer, desired_indicies, labeled_mers, num_desired_indicies, label, true);
 		}
 
-		if(seq[seq_length - 1] == '>') 
-			seq_length --;
-
+		if(seq_length != 0) {
+			seq_length--;
+		}
 		sequence++;
 		global_position += seq_length;
-		printf("%llu %llu\n", seq_length, global_position);
 	}
 
 	free(line);
