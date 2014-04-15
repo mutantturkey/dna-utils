@@ -222,6 +222,9 @@ void count_sequence(const char *seq, const size_t seq_length, const unsigned int
 		unsigned long long multiply = 1;
 
 		// for each char in the k-mer check if it is an error char
+
+		// TODO Get rid of branch prediction - can we do it? Error flag with
+		// bitshifts
 		for(i = position + kmer - 1; i >= position; i--){
 			if(seq[i] == 5) {
 				position = i;
@@ -272,18 +275,19 @@ array_type * get_kmer_counts_from_file(array_type *counts, FILE *fh, const unsig
 		exit(EXIT_FAILURE);
 	}
 
+	// TODO remove getdelim and add a fasta parsing state engine instead
 	while ((read = getdelim(&line, &len, '>', fh)) != -1) {
 		size_t k;
 		char *seq;
 
-		// find our first \n, this should be the end of the header
+		// TODO optimize out strchr with a while loop
 		seq = strchr(line, '\n');	
 		if(seq == NULL) 
 			continue;
-
 		// point to one past that.
 		seq = seq + 1;
 
+		// TODO can we loop jam the strnstrip and alpha? that way memory access is only done once?
 		// strip out all other newlines to handle multiline sequences
 		const size_t seq_length = strnstrip(seq, '\n', strlen(seq));
 
@@ -295,6 +299,7 @@ array_type * get_kmer_counts_from_file(array_type *counts, FILE *fh, const unsig
 		count_sequence(seq, seq_length, kmer, counts);
 
 		if(count_compliment) {
+			// TODO Same for this, can we reverse and compliment at the same time?
 			for(k = 0; k < seq_length; k++) { 
 				seq[k] = compliment[(int)seq[k]];
 			}
@@ -305,7 +310,7 @@ array_type * get_kmer_counts_from_file(array_type *counts, FILE *fh, const unsig
 		}
 	}
 
-  	free(line);
+	free(line);
 	fclose(fh);
 
 	return counts;
