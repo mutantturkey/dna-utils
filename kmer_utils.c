@@ -275,7 +275,6 @@ array_type * get_kmer_counts_from_file(array_type *counts, FILE *fh, const unsig
 	while ((read = getdelim(&line, &len, '>', fh)) != -1) {
 		size_t k;
 		char *seq;
-		size_t seq_length;
 
 		// find our first \n, this should be the end of the header
 		seq = strchr(line, '\n');	
@@ -286,8 +285,7 @@ array_type * get_kmer_counts_from_file(array_type *counts, FILE *fh, const unsig
 		seq = seq + 1;
 
 		// strip out all other newlines to handle multiline sequences
-		strnstrip(seq, '\n', strlen(seq));
-		seq_length = strlen(seq);
+		const size_t seq_length = strnstrip(seq, '\n', strlen(seq));
 
 		// relace A, C, G and T with 0, 1, 2, 3 respectively
 		// everything else is 5 
