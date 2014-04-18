@@ -8,6 +8,10 @@
 
 #include "kmer_utils.h"
 
+#ifdef FORCE_GETLINE
+	#include "getline/getline.h"
+#endif
+
 void print_mer(unsigned long long mer, const long long pos, const bool labels, const bool reverse, unsigned int kmer, char *label) {
 	if(labels) {
 		char *kmer_str;

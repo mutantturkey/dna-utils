@@ -1,8 +1,8 @@
 // Copyright 2013 Calvin Morrison
 #include <errno.h>
 #include <stdbool.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 #include <string.h>
 #include <getopt.h>
 

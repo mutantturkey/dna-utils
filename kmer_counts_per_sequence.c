@@ -8,6 +8,10 @@
 
 #include "kmer_utils.h"
 
+#ifdef FORCE_GETLINE
+	#include "getline/getline.h"
+#endif
+
 void help() {
 	printf("usage: kmer_counts_per_sequence input_file kmer [kmer-file] ...\n\n"
 				 "count mers in each sequence of size k from a fasta file\n"

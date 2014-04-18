@@ -9,6 +9,10 @@
 
 using namespace std;
 
+#ifdef FORCE_GETLINE
+	#include "getline/getline.h"
+#endif
+
 typedef struct {
 	size_t operator() (const size_t &k) const {
 	return k;
