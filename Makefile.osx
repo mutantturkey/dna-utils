@@ -1,5 +1,5 @@
 VERSION=\"0.0.5\"
-CC = x86_64-apple-darwin10-g++-mp-4.8
+CC = g++-mp-4.8
 CFLAGS = -O3 -s -march=native -Wall -Wextra -DVERSION=$(VERSION) -std=c++11
 
 DESTDIR = /usr/local
