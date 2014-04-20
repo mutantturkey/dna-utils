@@ -1,6 +1,19 @@
 # dna-utils 
 
 
+## building
+
+Building is easy using make.
+
+Linux:
+
+    make
+		make install
+
+OS/X or if you don't have getline:
+
+    make -f Makefile.osx
+		make install
 This repository contains general utilities for processing sequences in fasta files.
 
 
