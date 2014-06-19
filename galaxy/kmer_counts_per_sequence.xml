@@ -1,0 +1,32 @@
+<tool id="countspersequence" name="Kmer Counts Per Sequence">
+	<description>get kmer counts for each sequence</description>
+	<command>
+		kmer_counts_per_sequence
+		-k $kmer 
+		#if labels:
+			-l
+		#endif
+		#if $reverse:
+			-c
+		#endif
+		#if $sparse:
+			-s
+	  #endif
+		-i $input > $output
+	</command>
+	<inputs>
+		<param name="input" type="data" format="fasta" label="input fasta file"/>
+		<param name="kmer" type="integer" size="2" value="6" label="What mer size to use?" help="range 1 - 30"/>
+		<param name="labels" type="boolean" value="True" label="do you want mer labels (AAA, AAC, AAG) shown?" help="" />
+		<param name="reverse" type="boolean" value="True" label="do you want to count both strands (the reverse compliment)?" help="" />
+		<param name="sparse" type="boolean" value="True" label="do you want to output only nonzero counts?"help="" />
+	</inputs>
+	<outputs>
+		<data name="output" format="tabular"/>
+	</outputs>
+	<help>
+	input a sample file, get a count of kmers in each sequence
+	</help>
+</tool>
+
+
