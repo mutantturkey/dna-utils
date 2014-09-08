@@ -1,6 +1,6 @@
 VERSION=\"0.0.5\"
-CC = g++-4.8
-CFLAGS = -O3 -s -Wall -Wextra -DVERSION=$(VERSION) -std=c++11
+CC = g++
+CFLAGS = -O3 -Wall -Wextra -DVERSION=$(VERSION) -std=c++11
 
 DESTDIR = /usr/local
 
